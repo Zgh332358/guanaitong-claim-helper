@@ -1,0 +1,70 @@
+flowchart TB
+    subgraph ENTRY["入口 · 当前 macOS 用户"]
+        direction TB
+        TIMER["launchd<br/>每天本机时间 20:30"]
+        MANUAL["手动领取 / 只读检查<br/>生成的 .command 入口"]
+        HUMAN["一次性人工操作<br/>登录与定位同意"]
+    end
+
+    subgraph APP["本机 Python · 按需启动，无常驻服务"]
+        direction TB
+        SUP["launcher.py<br/>监督 worker · 120 秒上限"]
+        WORKER["claim.py<br/>互斥锁与流程编排"]
+        TIME["scheduling.py<br/>20:30–24:00 窗口<br/>自动模式检查睡眠 / 关机"]
+        ENGINE["engine.py<br/>唯一今日卡片 · 最多 5 次<br/>识别成功 / 阻断 / 不确定"]
+        SESSION["browser_state.py<br/>保存 / 恢复浏览器会话"]
+        LOCATION["location_access.py<br/>默认不授权 · 仅目标站点<br/>探测真实位置，不返回坐标"]
+        LOGIN["login.py<br/>专用可见 Chrome 人工登录"]
+        NOTICE["系统信息弹窗<br/>登录 / 定位异常提醒"]
+    end
+
+    subgraph BROWSER["浏览器执行边界"]
+        CHROME["独立 Chrome 配置目录<br/>领取：无头模式<br/>人工登录：可见窗口"]
+    end
+
+    subgraph EXTERNAL["第三方 · 最终资格由网站决定"]
+        SITE["关爱通领取页<br/>c.guanaitong.com"]
+        AUTH["登录跳转<br/>m.igeidao.com 等"]
+        GEO["浏览器 / 系统真实定位<br/>不注入虚拟位置"]
+    end
+
+    subgraph DATA["本机私有数据 · 不进入源码包"]
+        direction TB
+        PROFILE[("chrome-profile / auth-state<br/>会话材料")]
+        CONSENT[("location-consent<br/>仅当前设备的同意开关")]
+        LOG[("run.log<br/>状态 / 模式 / 固定错误分类")]
+    end
+
+    TIMER --> SUP
+    MANUAL --> SUP
+    SUP --> WORKER
+    SUP --> NOTICE
+    SUP --> LOG
+    WORKER --> TIME
+    WORKER --> ENGINE
+    WORKER --> SESSION
+    WORKER --> LOCATION
+    HUMAN --> LOGIN
+    HUMAN -. "明确同意" .-> LOCATION
+    LOGIN --> CHROME
+    LOGIN --> SESSION
+    SESSION <-->|"auth-state"| PROFILE
+    CHROME <-->|"chrome-profile"| PROFILE
+    SESSION -. "恢复会话" .-> CHROME
+    LOCATION <-->|"读写同意开关"| CONSENT
+    LOCATION -. "按同意授权" .-> CHROME
+    ENGINE -->|"网页交互与状态读取"| CHROME
+    CHROME --> SITE
+    CHROME --> AUTH
+    CHROME --> GEO
+
+    classDef entry fill:#eaf1fb,stroke:#4c6fa1,color:#17335b,stroke-width:1.4px
+    classDef process fill:#f5f8fc,stroke:#8496ad,color:#182f4c,stroke-width:1.2px
+    classDef core fill:#e8f6f2,stroke:#2b8372,color:#123e34,stroke-width:1.6px
+    classDef external fill:#fff5e5,stroke:#b58a40,color:#624617,stroke-width:1.2px
+    classDef private fill:#f1edf8,stroke:#8b78ab,color:#493761,stroke-width:1.2px
+    class TIMER,MANUAL,HUMAN entry
+    class SUP,WORKER,LOGIN,NOTICE,SESSION process
+    class ENGINE,TIME,LOCATION,CHROME core
+    class SITE,AUTH,GEO external
+    class PROFILE,CONSENT,LOG private

@@ -1,0 +1,29 @@
+# Runtime data, secrets and private evidence — never publish
+chrome-profile/
+auth-state.json
+location-consent.json
+install-info.json
+profile.lock
+run.log*
+task.xml
+TEST_REPORT.md
+artifacts/
+.env*
+!.env.example
+
+# Machine-specific generated launchers
+*.command
+*.cmd
+!windows/install.cmd
+
+# Local tooling and build output
+.venv/
+__pycache__/
+*.py[cod]
+*.zip
+*.sha256
+PACKAGE_MANIFEST.json
+.diagram-tools/
+node_modules/
+.DS_Store
+Thumbs.db
